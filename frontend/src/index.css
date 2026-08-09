@@ -1,0 +1,29 @@
+@import url("https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,300..700;1,300..700&family=Outfit:wght@100..900&family=Prata&display=swap");
+@import "tailwindcss";
+* {
+  font-family: "Outfit", sans-serif;
+  font-optical-sizing: auto;
+}
+
+.prata-regular {
+  font-family: "Prata", serif;
+  font-weight: 400;
+  font-style: normal;
+}
+.cormorant-regular {
+  font-family: "Cormorant", serif;
+  font-weight: 400;
+  font-style: normal;
+}
+.cormorant-italic {
+  font-family: "Cormorant", serif;
+  font-weight: 400;
+  font-style: italic;
+}
+@media (max-width: 640px) {
+  a.active {
+    font-size: 0.875rem; /* 14px */
+    background-color: #181717; /* Light gray background for active link */
+    color: #e3e0e0; /* Darker text color for active link */
+  }
+}
