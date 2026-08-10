@@ -19,13 +19,21 @@ connectCloudinary();
 const allowedOrigins = [
   "https://victony-wears-admin.vercel.app", // ADMIN
   "https://first-full-stack-application-rho.vercel.app", // FRONTEND
-  "http://localhost:5173", // Vite local
+  "http://localhost:5173", // Vite local default
+  "http://localhost:5174", // Vite local backup port <- ADDED THIS
   "http://localhost:3000", // React local
 ];
 
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: function (origin, callback) {
+      // allow requests with no origin like postman/mobile apps
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.indexOf(origin) === -1) {
+        return callback(new Error("CORS not allowed by this server"), false);
+      }
+      return callback(null, true);
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "token"],
