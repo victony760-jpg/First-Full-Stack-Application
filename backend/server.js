@@ -15,8 +15,23 @@ const port = process.env.PORT || 4000;
 connectDB();
 connectCloudinary();
 
-// middleware
-app.use(cors());
+// CORS - Allow Admin + Frontend + Local Dev
+const allowedOrigins = [
+  "https://victony-wears-admin.vercel.app", // ADMIN
+  "https://first-full-stack-application-rho.vercel.app", // FRONTEND
+  "http://localhost:5173", // Vite local
+  "http://localhost:3000", // React local
+];
+
+app.use(
+  cors({
+    origin: allowedOrigins,
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "token"],
+  }),
+);
+
 app.use(express.json());
 
 // api endpoints
