@@ -1,9 +1,8 @@
-import React, { createContext, useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-
-export const ShopContext = createContext();
+import { ShopContext } from './ShopContext';
 
 const ShopContextProvider = ({ children }) => {
   const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
