@@ -5,6 +5,7 @@ import {
   placeOrderPaystack,
   verifyStripe,
   verifyPaystack,
+  verifyPaystackRedirect, // NEW
   markAsPaid,
   userOrders,
   allOrders,
@@ -19,13 +20,17 @@ import authUser from "../middleware/auth.js";
 
 const orderRouter = express.Router();
 
+// USER ROUTES
 orderRouter.post("/place", authUser, placeOrder);
 orderRouter.post("/stripe", authUser, placeOrderStripe);
 orderRouter.post("/paystack", authUser, placeOrderPaystack);
 
-// CHANGED: GET -> POST so frontend can send body
-orderRouter.post("/verify-stripe", authUser, verifyStripe); 
-orderRouter.post("/verify-paystack", authUser, verifyPaystack); 
+// API VERIFY - called by frontend with token
+orderRouter.post("/verify-stripe", authUser, verifyStripe);
+orderRouter.post("/verify-paystack", authUser, verifyPaystack);
+
+// BROWSER REDIRECT - called by Paystack after payment. No auth
+orderRouter.get("/verify-paystack", verifyPaystackRedirect);
 
 orderRouter.post("/userorders", authUser, userOrders);
 orderRouter.post("/single", authUser, getOrderById);
@@ -33,6 +38,7 @@ orderRouter.post("/cancel", authUser, cancelOrder);
 orderRouter.delete("/delete/:orderId", authUser, deleteOrder);
 orderRouter.delete("/delete-cancelled", authUser, deleteCancelledOrders);
 
+// ADMIN ROUTES
 orderRouter.post("/list", adminAuth, allOrders);
 orderRouter.post("/mark-paid", adminAuth, markAsPaid);
 orderRouter.post("/status", adminAuth, updateStatus);

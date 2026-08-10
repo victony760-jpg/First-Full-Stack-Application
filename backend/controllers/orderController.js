@@ -122,14 +122,14 @@ const placeOrderStripe = async (req, res) => {
   }
 };
 
-// 3. Verify Stripe - FIXED
+// 3. Verify Stripe
 const verifyStripe = async (req, res) => {
-  const { orderId, success, userId } = req.body; // reads from body now
+  const { orderId, success, userId } = req.body;
   try {
     if (success === "true") {
       await orderModel.findByIdAndUpdate(orderId, { payment: true });
       if (userId) await userModel.findByIdAndUpdate(userId, { cartData: {} });
-      return res.json({ success: true, message: "Payment Successful" }); // return JSON
+      return res.json({ success: true, message: "Payment Successful" });
     } else {
       await orderModel.findByIdAndDelete(orderId);
       return res.json({ success: false, message: "Payment Failed" });
@@ -184,10 +184,10 @@ const placeOrderPaystack = async (req, res) => {
   }
 };
 
-// 5. Verify Paystack - FIXED
+// 5. Verify Paystack - API call from frontend
 const verifyPaystack = async (req, res) => {
   try {
-    const { reference, orderId: orderIdFromBody } = req.body; // reads from body now
+    const { reference, orderId: orderIdFromBody } = req.body;
     if (!reference)
       return res.json({ success: false, message: "Payment reference missing" });
 
@@ -207,14 +207,51 @@ const verifyPaystack = async (req, res) => {
     });
     await userModel.findByIdAndUpdate(userId, { cartData: {} });
 
-    res.json({ success: true, message: "Payment Successful" }); // return JSON
+    res.json({ success: true, message: "Payment Successful" });
   } catch (error) {
     console.log(error);
     res.json({ success: false, message: error.message });
   }
 };
 
-// 6. Admin: Mark COD as paid
+// 6. NEW: Verify Paystack - Browser Redirect from Paystack
+const verifyPaystackRedirect = async (req, res) => {
+  try {
+    const { reference, orderId } = req.query;
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+
+    if (!reference) {
+      return res.redirect(
+        `${frontendUrl}/orders?success=false&message=No reference`,
+      );
+    }
+
+    const response = await paystackInstance.transaction.verify(reference);
+
+    if (response.data.status === "success") {
+      const { orderId: orderIdFromMeta, userId } = response.data.metadata || {};
+      const finalOrderId = orderId || orderIdFromMeta;
+
+      await orderModel.findByIdAndUpdate(finalOrderId, {
+        payment: true,
+        status: "Order Placed",
+        paymentReference: reference,
+      });
+      if (userId) await userModel.findByIdAndUpdate(userId, { cartData: {} });
+
+      return res.redirect(`${frontendUrl}/orders?success=true`);
+    } else {
+      await orderModel.findByIdAndDelete(orderId);
+      return res.redirect(`${frontendUrl}/orders?success=false`);
+    }
+  } catch (error) {
+    console.log(error);
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+    res.redirect(`${frontendUrl}/orders?success=false`);
+  }
+};
+
+// 7. Admin: Mark COD as paid
 const markAsPaid = async (req, res) => {
   try {
     const { orderId } = req.body;
@@ -226,7 +263,7 @@ const markAsPaid = async (req, res) => {
   }
 };
 
-// 7. Admin: All orders
+// 8. Admin: All orders
 const allOrders = async (req, res) => {
   try {
     const orders = await orderModel.find({}).sort({ date: -1 });
@@ -237,7 +274,7 @@ const allOrders = async (req, res) => {
   }
 };
 
-// 8. User: My orders
+// 9. User: My orders
 const userOrders = async (req, res) => {
   try {
     const userId = req.userId;
@@ -249,7 +286,7 @@ const userOrders = async (req, res) => {
   }
 };
 
-// 9. Get Single Order
+// 10. Get Single Order
 const getOrderById = async (req, res) => {
   try {
     const { orderId } = req.body;
@@ -269,7 +306,7 @@ const getOrderById = async (req, res) => {
   }
 };
 
-// 10. User cancels order
+// 11. User cancels order
 const cancelOrder = async (req, res) => {
   try {
     const { orderId } = req.body;
@@ -287,7 +324,7 @@ const cancelOrder = async (req, res) => {
   }
 };
 
-// 11. Delete - User can only delete Placed/Cancelled
+// 12. Delete - User can only delete Placed/Cancelled
 const deleteOrder = async (req, res) => {
   try {
     const { orderId } = req.params;
@@ -315,7 +352,7 @@ const deleteOrder = async (req, res) => {
   }
 };
 
-// 12. Delete all cancelled orders
+// 13. Delete all cancelled orders
 const deleteCancelledOrders = async (req, res) => {
   try {
     const userId = req.userId;
@@ -331,7 +368,7 @@ const deleteCancelledOrders = async (req, res) => {
   }
 };
 
-// 13. Admin: Update status
+// 14. Admin: Update status
 const updateStatus = async (req, res) => {
   try {
     const { orderId, status } = req.body;
@@ -349,6 +386,7 @@ export {
   placeOrderPaystack,
   verifyStripe,
   verifyPaystack,
+  verifyPaystackRedirect, // NEW EXPORT
   markAsPaid,
   allOrders,
   userOrders,
