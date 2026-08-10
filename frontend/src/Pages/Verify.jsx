@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from 'react'
+import { useContext, useEffect, useRef, useState } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { ShopContext } from '../Context/ShopContext'
 import axios from 'axios'
@@ -9,6 +9,7 @@ const Verify = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const hasRun = useRef(false); // PREVENT DOUBLE CALL IN REACT 18
 
   const orderId = searchParams.get('orderId');
   const success = searchParams.get('success'); // from Stripe
@@ -16,13 +17,10 @@ const Verify = () => {
   const userId = searchParams.get('userId');
 
   useEffect(() => {
-    const verifyPayment = async () => {
-      if (!token) {
-        toast.error("Please login to continue");
-        navigate('/login');
-        return;
-      }
+    if (hasRun.current) return;
+    hasRun.current = true;
 
+    const verifyPayment = async () => {
       if (!orderId) {
         toast.error("Order ID missing");
         navigate('/cart');
@@ -31,13 +29,15 @@ const Verify = () => {
 
       try {
         let response;
+        // Only send token if user is logged in. Stripe redirect might not have it yet
+        const headers = token? { headers: { token } } : {};
 
         // 1. Paystack Verification
         if (reference) {
           response = await axios.post(
             `${backendUrl}/api/order/verify-paystack`,
             { orderId, userId, reference },
-            { headers: { token } }
+            headers
           );
         }
         // 2. Stripe Verification
@@ -45,7 +45,7 @@ const Verify = () => {
           response = await axios.post(
             `${backendUrl}/api/order/verify-stripe`,
             { orderId, success, userId },
-            { headers: { token } }
+            headers
           );
         }
 
@@ -68,11 +68,11 @@ const Verify = () => {
     };
 
     verifyPayment();
-  }, [token, orderId, success, reference, userId, backendUrl, navigate, setCart]);
+  }, []); // empty dependency array so it runs only once
 
   return (
     <div className='min-h-[60vh] flex items-center justify-center'>
-      {loading ? (
+      {loading? (
         <div className='flex flex-col items-center gap-4'>
           <div className='w-16 h-16 border-4 border-gray-200 border-t-black rounded-full animate-spin'></div>
           <p className='text-gray-600 text-lg'>Verifying your payment...</p>

@@ -122,11 +122,21 @@ const placeOrderStripe = async (req, res) => {
   }
 };
 
-// 3. Verify Stripe
+// 3. Verify Stripe - FIXED TO PREVENT DUPLICATES
 const verifyStripe = async (req, res) => {
   const { orderId, success, userId } = req.body;
   try {
     if (success === "true") {
+      const order = await orderModel.findById(orderId);
+      if (!order) {
+        return res.json({ success: false, message: "Order not found" });
+      }
+
+      // IDEMPOTENCY CHECK: If already paid, just return success. Don't run again
+      if (order.payment) {
+        return res.json({ success: true, message: "Payment Already Verified" });
+      }
+
       await orderModel.findByIdAndUpdate(orderId, { payment: true });
       if (userId) await userModel.findByIdAndUpdate(userId, { cartData: {} });
       return res.json({ success: true, message: "Payment Successful" });
@@ -201,6 +211,12 @@ const verifyPaystack = async (req, res) => {
       orderId: orderIdFromBody,
     };
 
+    // IDEMPOTENCY CHECK for Paystack too
+    const order = await orderModel.findById(orderId);
+    if (order?.payment) {
+      return res.json({ success: true, message: "Payment Already Verified" });
+    }
+
     await orderModel.findByIdAndUpdate(orderId, {
       payment: true,
       status: "Order Placed",
@@ -232,12 +248,16 @@ const verifyPaystackRedirect = async (req, res) => {
       const { orderId: orderIdFromMeta, userId } = response.data.metadata || {};
       const finalOrderId = orderId || orderIdFromMeta;
 
-      await orderModel.findByIdAndUpdate(finalOrderId, {
-        payment: true,
-        status: "Order Placed",
-        paymentReference: reference,
-      });
-      if (userId) await userModel.findByIdAndUpdate(userId, { cartData: {} });
+      // IDEMPOTENCY CHECK
+      const order = await orderModel.findById(finalOrderId);
+      if (!order?.payment) {
+        await orderModel.findByIdAndUpdate(finalOrderId, {
+          payment: true,
+          status: "Order Placed",
+          paymentReference: reference,
+        });
+        if (userId) await userModel.findByIdAndUpdate(userId, { cartData: {} });
+      }
 
       return res.redirect(`${frontendUrl}/orders?success=true`);
     } else {
@@ -386,7 +406,7 @@ export {
   placeOrderPaystack,
   verifyStripe,
   verifyPaystack,
-  verifyPaystackRedirect, // NEW EXPORT
+  verifyPaystackRedirect,
   markAsPaid,
   allOrders,
   userOrders,
