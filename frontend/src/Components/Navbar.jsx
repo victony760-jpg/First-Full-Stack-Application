@@ -1,4 +1,4 @@
-import { useContext, useState } from 'react';
+import { useContext, useState, useRef, useEffect } from 'react';
 import { assets } from '../assets/assets'
 import { Link, NavLink } from 'react-router-dom'
 import { ShopContext } from '../Context/ShopContext'
@@ -6,15 +6,29 @@ import { toast } from 'react-toastify';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false); // NEW
   const { setShowSearch, getCartCount, navigate, setToken, setCart, token } = useContext(ShopContext);
+  const dropdownRef = useRef(null); // NEW
 
   const toggleMenu = () => { setIsMenuOpen(!isMenuOpen); };
+
+  // NEW: Close profile dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowProfileDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const logout = () => {
     setToken('');
     localStorage.removeItem('token');
     setCart({});
     localStorage.removeItem('cart');
+    setShowProfileDropdown(false); // NEW
     navigate('/login');
   }
 
@@ -63,12 +77,23 @@ const Navbar = () => {
       <div className='flex items-center gap-6'>
         <img onClick={() => { setShowSearch(true); navigate('/collection'); }} src={assets.search_icon} alt="Search" className='w-5 cursor-pointer hover:scale-110 transition-all' />
 
-        <div className='group relative py-2'>
-          <img onClick={() => token ? null : navigate('/login')} src={assets.profile_icon} alt="User" className='w-5 cursor-pointer hover:scale-110 transition-all' />
-          {token && (
-            <div className='absolute right-0 pt-2 mt-2 w-36 bg-white border border-gray-200 rounded shadow-lg z-10 hidden group-hover:block'>
-              <Link to="/profile" className='block px-4 py-2 text-gray-700 hover:bg-gray-100'>My Profile</Link>
-              <Link to="/order" className='block px-4 py-2 text-gray-700 hover:bg-gray-100'>Orders</Link>
+        {/* FIXED PROFILE DROPDOWN */}
+        <div
+          className='relative py-2'
+          ref={dropdownRef}
+          onMouseEnter={() => token && setShowProfileDropdown(true)} // desktop hover
+          onMouseLeave={() => token && setShowProfileDropdown(false)} // desktop hover
+        >
+          <img
+            onClick={() => token ? setShowProfileDropdown(!showProfileDropdown) : navigate('/login')} // mobile tap
+            src={assets.profile_icon}
+            alt="User"
+            className='w-5 cursor-pointer hover:scale-110 transition-all'
+          />
+          {token && showProfileDropdown && (
+            <div className='absolute right-0 pt-2 mt-2 w-36 bg-white border border-gray-200 rounded shadow-lg z-10'>
+              <Link to="/profile" onClick={() => setShowProfileDropdown(false)} className='block px-4 py-2 text-gray-700 hover:bg-gray-100'>My Profile</Link>
+              <Link to="/order" onClick={() => setShowProfileDropdown(false)} className='block px-4 py-2 text-gray-700 hover:bg-gray-100'>Orders</Link>
               <button onClick={logout} className='w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100'>Logout</button>
             </div>
           )}
