@@ -5,29 +5,20 @@ import { ShopContext } from '../Context/ShopContext'
 import { assets } from '../assets/assets'
 import ProductItem from '../Components/ProductItem'
 
-
 const Collection = () => {
 
   const { products, currencySymbol, search, showSearch } = useContext(ShopContext);
   const [showFilter, setShowFilter] = useState(false);
   const [sortType, setSortType] = useState('relevant');
-  const [selectedCategories, setSelectedCategories] = useState([]);
-  const [selectedSubCategories, setSelectedSubCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState(''); // CHANGED: single select
+  const [selectedSubCategory, setSelectedSubCategory] = useState(''); // CHANGED: single select
 
   const handleCategoryChange = (category) => {
-    if (selectedCategories.includes(category)) {
-      setSelectedCategories(selectedCategories.filter((cat) => cat !== category));
-    } else {
-      setSelectedCategories([...selectedCategories, category]);
-    }
+    setSelectedCategory(selectedCategory === category ? '' : category); // toggle off if same
   };
 
   const handleSubCategoryChange = (subCategory) => {
-    if (selectedSubCategories.includes(subCategory)) {
-      setSelectedSubCategories(selectedSubCategories.filter((sub) => sub !== subCategory));
-    } else {
-      setSelectedSubCategories([...selectedSubCategories, subCategory]);
-    }
+    setSelectedSubCategory(selectedSubCategory === subCategory ? '' : subCategory); // toggle off if same
   };
 
   const filteredProducts = useMemo(() => {
@@ -37,12 +28,12 @@ const Collection = () => {
       productsCopy = productsCopy.filter((item) => item.name.toLowerCase().includes(search.toLowerCase()));
     }
 
-    if (selectedCategories.length > 0) {
-      productsCopy = productsCopy.filter((item) => selectedCategories.includes(item.category));
+    if (selectedCategory) { // CHANGED
+      productsCopy = productsCopy.filter((item) => item.category === selectedCategory);
     }
 
-    if (selectedSubCategories.length > 0) {
-      productsCopy = productsCopy.filter((item) => selectedSubCategories.includes(item.subCategory));
+    if (selectedSubCategory) { // CHANGED
+      productsCopy = productsCopy.filter((item) => item.subCategory === selectedSubCategory);
     }
 
     if (sortType === 'low-high') {
@@ -52,7 +43,7 @@ const Collection = () => {
     }
 
     return productsCopy;
-  }, [products, search, showSearch, selectedCategories, selectedSubCategories, sortType]);
+  }, [products, search, showSearch, selectedCategory, selectedSubCategory, sortType]);
 
   return (
     <div className='flex flex-col sm:flex-row gap-1 sm:gap-10 pt-10 border-t'>
@@ -67,15 +58,18 @@ const Collection = () => {
         <div className={`border border-gray-300 pl-5 py-3 mt-6 ${showFilter ? '' : 'hidden'} sm:block`}>
           <p className='mb-3 text-sm font-medium'>CATEGORIES</p>
           <div className='flex flex-col gap-2 text-sm font-light text-gray-700'>
-            <p className='flex gap-2'>
-              <input className='w-3' type="checkbox" value={'Men'} onChange={() => handleCategoryChange('Men')} /> Men
-            </p>
-            <p className='flex gap-2'>
-              <input className='w-3' type="checkbox" value={'Women'} onChange={() => handleCategoryChange('Women')} /> Women
-            </p>
-            <p className='flex gap-2'>
-              <input className='w-3' type="checkbox" value={'Kids'} onChange={() => handleCategoryChange('Kids')} /> Kids
-            </p>
+            {['Men', 'Women', 'Kids'].map((item) => (
+              <label key={item} className='flex gap-2 cursor-pointer items-center'>
+                <input
+                  className='w-3'
+                  type="radio" // CHANGED
+                  name="category" // CHANGED
+                  checked={selectedCategory === item} // CHANGED
+                  onChange={() => handleCategoryChange(item)}
+                />
+                {item}
+              </label>
+            ))}
           </div>
         </div>
 
@@ -83,15 +77,18 @@ const Collection = () => {
         <div className={`border border-gray-300 pl-5 py-3 my-5 ${showFilter ? '' : 'hidden'} sm:block`}>
           <p className='mb-3 text-sm font-medium'>TYPE</p>
           <div className='flex flex-col gap-2 text-sm font-light text-gray-700'>
-            <p className='flex gap-2'>
-              <input className='w-3' type="checkbox" value={'Topwear'} onChange={() => handleSubCategoryChange('Topwear')} /> Topwear
-            </p>
-            <p className='flex gap-2'>
-              <input className='w-3' type="checkbox" value={'Bottomwear'} onChange={() => handleSubCategoryChange('Bottomwear')} /> Bottomwear
-            </p>
-            <p className='flex gap-2'>
-              <input className='w-3' type="checkbox" value={'Winterwear'} onChange={() => handleSubCategoryChange('Winterwear')} /> Winterwear
-            </p>
+            {['Topwear', 'Bottomwear', 'Winterwear'].map((item) => (
+              <label key={item} className='flex gap-2 cursor-pointer items-center'>
+                <input
+                  className='w-3'
+                  type="radio" // CHANGED
+                  name="subcategory" // CHANGED
+                  checked={selectedSubCategory === item} // CHANGED
+                  onChange={() => handleSubCategoryChange(item)}
+                />
+                {item}
+              </label>
+            ))}
           </div>
         </div>
       </div>

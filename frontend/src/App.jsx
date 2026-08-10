@@ -1,4 +1,5 @@
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, BrowserRouter } from 'react-router-dom'
+import ScrollToTop from './Components/ScrollToTop' // NEW
 import Home from './Pages/Home'
 import About from './Pages/About'
 import Contact from './Pages/Contact'
@@ -20,29 +21,32 @@ import 'react-toastify/dist/ReactToastify.css'
 
 const App = () => {
   return (
-    <div className='px-4 sm:px-[5vw] md:px-[7vw] lg:px-[9vw]'>
-      <ToastContainer />
-      <Navbar />
-      <SearchBar />
-      <Routes>
-        <Route index element={<Home />} />
-        <Route path='/about' element={<About />} />
-        <Route path='/contact' element={<Contact />} />
-        <Route path='/cart' element={<Cart />} />
-        <Route path='/collection' element={<Collection />} />
-        <Route path='/product/:productId' element={<Product />} />
-        <Route path='/order' element={<Order />} />
-        <Route path='/orders' element={<Order />} />
-        <Route path='/order/:orderId' element={<OrderDetails />} />
-        <Route path='/apply/:jobTitle' element={<JobApply />} />
-        <Route path='/careers' element={<Careers />} />
-        <Route path='/login' element={<Login />} />
-        <Route path='/placeorder' element={<PlaceOrder />} />
-        <Route path='*' element={<Home />} />
-        <Route path='/verify' element={<Verify />} />
-      </Routes>
-      <Footer />
-    </div>
+    <BrowserRouter>
+      <div className='px-4 sm:px-[5vw] md:px-[7vw] lg:px-[9vw]'>
+        <ToastContainer />
+        <ScrollToTop /> {/* NEW: scrolls to top on every route change */}
+        <Navbar />
+        <SearchBar />
+        <Routes>
+          <Route index element={<Home />} />
+          <Route path='/about' element={<About />} />
+          <Route path='/contact' element={<Contact />} />
+          <Route path='/cart' element={<Cart />} />
+          <Route path='/collection' element={<Collection />} />
+          <Route path='/product/:productId' element={<Product />} />
+          <Route path='/order' element={<Order />} />
+          <Route path='/orders' element={<Order />} />
+          <Route path='/order/:orderId' element={<OrderDetails />} />
+          <Route path='/apply/:jobTitle' element={<JobApply />} />
+          <Route path='/careers' element={<Careers />} />
+          <Route path='/login' element={<Login />} />
+          <Route path='/placeorder' element={<PlaceOrder />} />
+          <Route path='/verify' element={<Verify />} />
+          <Route path='*' element={<Home />} />
+        </Routes>
+        <Footer />
+      </div>
+    </BrowserRouter>
   )
 }
 
