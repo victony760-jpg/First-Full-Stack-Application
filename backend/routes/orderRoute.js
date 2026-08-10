@@ -5,7 +5,7 @@ import {
   placeOrderPaystack,
   verifyStripe,
   verifyPaystack,
-  verifyPaystackRedirect, // NEW
+  verifyPaystackRedirect,
   markAsPaid,
   userOrders,
   allOrders,
@@ -25,9 +25,9 @@ orderRouter.post("/place", authUser, placeOrder);
 orderRouter.post("/stripe", authUser, placeOrderStripe);
 orderRouter.post("/paystack", authUser, placeOrderPaystack);
 
-// API VERIFY - called by frontend with token
-orderRouter.post("/verify-stripe", authUser, verifyStripe);
-orderRouter.post("/verify-paystack", authUser, verifyPaystack);
+// API VERIFY - NO AUTH because Stripe/Paystack redirect from external site
+orderRouter.post("/verify-stripe", verifyStripe); // REMOVED authUser
+orderRouter.post("/verify-paystack", verifyPaystack); // REMOVED authUser
 
 // BROWSER REDIRECT - called by Paystack after payment. No auth
 orderRouter.get("/verify-paystack", verifyPaystackRedirect);
