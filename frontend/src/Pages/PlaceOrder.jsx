@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from 'react'; // added useEffect
+import { useContext, useEffect, useState } from 'react';
 import axios from 'axios';
 import Title from '../Components/Title'
 import CartTotal from '../Components/CartTotal'
@@ -27,7 +27,7 @@ const PlaceOrder = () => {
     products,
     cart,
     backendUrl,
-    token, // already there
+    token,
     updateCurrencyByCountry,
     currency,
     delivery_fee,
@@ -36,13 +36,18 @@ const PlaceOrder = () => {
 
   const rate = 1400;
 
-  // BLOCK GUESTS + EMPTY CART
+  // BLOCK GUESTS + EMPTY CART - FIXED
   useEffect(() => {
+    const query = new URLSearchParams(window.location.search)
+    const justPaid = query.get('success') === 'true' // prevent error after payment
+
     if (!token) {
       toast.error("Please login to checkout");
       navigate('/login');
+      return;
     }
-    if (Object.keys(cart).length === 0) {
+    // Only redirect if cart is empty AND we didn't just come from payment
+    if (Object.keys(cart).length === 0 && !justPaid) {
       toast.error("Your cart is empty");
       navigate('/collection');
     }
@@ -86,7 +91,7 @@ const PlaceOrder = () => {
       toast.error("Your cart is empty");
       return;
     }
-    if (!token) { // double check
+    if (!token) {
       toast.error("You must be logged in to place an order.");
       return;
     }
@@ -152,7 +157,7 @@ const PlaceOrder = () => {
     }
   }
 
-  if (!token) return null; // prevent flash
+  if (!token) return null;
 
   return (
     <form onSubmit={onSubmitHandler} className='flex flex-col sm:flex-row justify-between gap-4 pt-5 sm:pt-14 min-h-[80vh] border-t'>
