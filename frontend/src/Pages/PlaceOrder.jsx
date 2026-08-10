@@ -1,10 +1,10 @@
-import { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import axios from 'axios';
-import Title from '../Components/Title'
-import CartTotal from '../Components/CartTotal'
-import { assets } from '../assets/assets'
-import { ShopContext } from '../Context/ShopContext'
-import { toast } from 'react-toastify'
+import Title from '../Components/Title';
+import CartTotal from '../Components/CartTotal';
+import { assets } from '../assets/assets';
+import { ShopContext } from '../Context/ShopContext';
+import { toast } from 'react-toastify';
 
 const PlaceOrder = () => {
   const [formData, setFormData] = useState({
@@ -19,60 +19,60 @@ const PlaceOrder = () => {
     phone: ''
   });
   const [method, setMethod] = useState('paystack');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const {
     navigate,
     setCart,
-    getCartAmount,
     products,
     cart,
     backendUrl,
     token,
-    updateCurrencyByCountry,
-    currency,
-    delivery_fee,
-    currencySymbol
+    getCartAmount
   } = useContext(ShopContext);
 
   const rate = 1400;
 
-  // BLOCK GUESTS + EMPTY CART - FIXED
+  // BLOCK GUESTS + REDIRECT IF CART IS EMPTY
   useEffect(() => {
-    const query = new URLSearchParams(window.location.search)
-    const justPaid = query.get('success') === 'true' // prevent error after payment
+    const query = new URLSearchParams(window.location.search);
+    const justPaid = query.get('success') === 'true';
 
     if (!token) {
       toast.error("Please login to checkout");
       navigate('/login');
       return;
     }
-    // Only redirect if cart is empty AND we didn't just come from payment
-    if (Object.keys(cart).length === 0 && !justPaid) {
+
+    // Only redirect if cart is empty, user didn't just pay, and order is not actively submitting
+    if (Object.keys(cart).length === 0 && !justPaid && !isSubmitting) {
       toast.error("Your cart is empty");
       navigate('/collection');
     }
-  }, [token, cart, navigate])
+  }, [token, cart, navigate, isSubmitting]);
 
+  // Handle country default payment method selection
   useEffect(() => {
-    updateCurrencyByCountry(formData.country);
     const isNigeriaCountry = formData.country.toLowerCase().includes('nigeria');
     setMethod(isNigeriaCountry ? 'paystack' : 'stripe');
-  }, [formData.country, updateCurrencyByCountry]);
+  }, [formData.country]);
 
   const onChangeHandler = (event) => {
     const name = event.target.name;
     const value = event.target.value;
     setFormData(data => ({ ...data, [name]: value }));
-  }
+  };
 
   const isNigeria = formData.country.toLowerCase().includes('nigeria');
   const orderCurrency = isNigeria ? 'ngn' : 'usd';
 
   const onSubmitHandler = async (event) => {
     event.preventDefault();
+    setIsSubmitting(true);
 
     let orderItems = [];
     let subtotalUSD = 0;
+
     for (const itemId in cart) {
       for (const size in cart[itemId]) {
         if (cart[itemId][size] > 0) {
@@ -89,10 +89,13 @@ const PlaceOrder = () => {
 
     if (subtotalUSD === 0) {
       toast.error("Your cart is empty");
+      setIsSubmitting(false);
       return;
     }
+
     if (!token) {
       toast.error("You must be logged in to place an order.");
+      setIsSubmitting(false);
       return;
     }
 
@@ -121,29 +124,34 @@ const PlaceOrder = () => {
       } else if (method === 'stripe') {
         if (isNigeria) {
           toast.error("Stripe is for international cards. Please select Paystack for Nigeria");
+          setIsSubmitting(false);
           return;
         }
         response = await axios.post(`${backendUrl}/api/order/stripe`, payload, { headers: { token } });
       } else if (method === 'paystack') {
         if (!isNigeria) {
           toast.error("Paystack is for Nigerian cards. Please select Stripe for international");
+          setIsSubmitting(false);
           return;
         }
         response = await axios.post(`${backendUrl}/api/order/paystack`, payload, { headers: { token } });
       } else {
         toast.error("Unknown payment method selected.");
+        setIsSubmitting(false);
         return;
       }
 
       if (!response.data.success) {
         toast.error(response.data.message || "Unable to place order.");
+        setIsSubmitting(false);
         return;
       }
 
-      setCart({});
-      localStorage.removeItem('cart');
-
+      // FIX: Only clear cart immediately for COD.
+      // For Paystack/Stripe, cart will be cleared on /orders page after success redirect
       if (method === 'cod') {
+        setCart({});
+        localStorage.removeItem('cart');
         toast.success("Order Placed Successfully!");
         navigate('/orders');
       } else if (method === 'stripe') {
@@ -154,8 +162,9 @@ const PlaceOrder = () => {
     } catch (error) {
       console.error(error);
       toast.error(error.response?.data?.message || 'Something went wrong while placing your order.');
+      setIsSubmitting(false);
     }
-  }
+  };
 
   if (!token) return null;
 
@@ -193,9 +202,14 @@ const PlaceOrder = () => {
       <div className='mt-8'>
         <div className='mt-8 min-w-80'>
           <CartTotal />
-          <p className='text-sm text-gray-600 mt-2'>
-            Delivery Fee: {isNigeria ? '₦2,500' : '$15'}
-          </p>
+          {isNigeria && (
+            <div className='mt-3 p-3 bg-gray-50 rounded border border-gray-200 text-sm font-medium text-gray-700'>
+              <p className='text-xs text-gray-500'>Exchange Rate: $1 = ₦{rate.toLocaleString()}</p>
+              <p className='text-green-700 font-bold text-base mt-1'>
+                Estimated Checkout Total: ₦{((getCartAmount() * rate) + 2500).toLocaleString()}
+              </p>
+            </div>
+          )}
         </div>
 
         <div className='mt-12'>
@@ -221,7 +235,7 @@ const PlaceOrder = () => {
         </div>
       </div>
     </form>
-  )
-}
+  );
+};
 
-export default PlaceOrder
+export default PlaceOrder;

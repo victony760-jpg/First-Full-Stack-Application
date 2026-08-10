@@ -7,12 +7,15 @@ import { jwtDecode } from 'jwt-decode';
 
 const formatCurrency = (amount, currency) => {
   const isNGN = currency?.toLowerCase() === 'ngn';
-  const num = Number(amount) / 100 || 0; // divide by 100 because we save in kobo/cents
+  const num = Number(amount) || 0;
+
+  // Amount from DB is already in kobo/cents. So divide by 100
+  const displayAmount = num / 100;
 
   if (isNGN) {
-    return `₦${num.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return `₦${displayAmount.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }
-  return `$${num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return `$${displayAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
 
 const Orders = () => {
@@ -45,15 +48,21 @@ const Orders = () => {
 
   useEffect(() => {
     const query = new URLSearchParams(window.location.search)
+
+    // Clear cart after successful payment redirect from Stripe/Paystack
     if (query.get('success') === 'true') {
       toast.success("Payment Successful")
       setCart({})
       localStorage.removeItem('cart')
+      navigate('/orders', { replace: true }) // remove ?success=true from url
+    }
+    if (query.get('success') === 'false') {
+      toast.error("Payment Failed")
       navigate('/orders', { replace: true })
     }
-    if (query.get('success') === 'false') toast.error("Payment Failed")
-    loadOrderData();
-  }, [loadOrderData, setCart, navigate]);
+
+    if (token) loadOrderData();
+  }, [loadOrderData, setCart, navigate, token]); // added token
 
   const deleteOrder = async (orderId) => {
     if (!window.confirm("Delete this order permanently?")) return;
@@ -101,12 +110,13 @@ const Orders = () => {
               <div className='flex flex-col gap-4 mb-4'>
                 {order.items.map((item, idx) => (
                   <div key={idx} className='flex gap-4 items-center border p-3 rounded-lg hover:shadow-sm transition'>
-                    <img className='w-20 h-20 object-cover rounded' src={item.image[0]} alt={item.name} />
+                    <img className='w-20 h-20 object-cover rounded' src={item.image?.[0] || ''} alt={item.name} />
                     <div className='flex-1'>
                       <p className='font-medium'>{item.name}</p>
                       <p className='text-sm text-gray-600'>Size: <span className='font-medium'>{item.size}</span> | Qty: {item.quantity}</p>
                       <p className='text-sm font-medium mt-1'>
-                        {formatCurrency(item.price * 100 * item.quantity, order.currency)}
+                        {/* FIX: item.price is already in base currency. Don't *100 again */}
+                        {formatCurrency(item.price * item.quantity * 100, order.currency)}
                       </p>
                     </div>
                   </div>
@@ -115,7 +125,7 @@ const Orders = () => {
 
               <div className='flex flex-col md:flex-row md:justify-between md:items-center gap-4 pt-4 border-t'>
                 <div className='text-sm space-y-1'>
-                  <p>Items: {order.items.length}</p>
+                  <p>Items: {order.items.reduce((acc, item) => acc + item.quantity, 0)}</p>
                   <p>Payment Method: {order.paymentMethod}</p>
                   <p>Total: <span className='font-semibold text-base'>{formatCurrency(order.amount, order.currency)}</span></p>
                   <p className={`font-medium ${order.payment ? 'text-green-600' : 'text-red-600'}`}>{order.payment ? 'Paid' : 'Not Paid'}</p>
