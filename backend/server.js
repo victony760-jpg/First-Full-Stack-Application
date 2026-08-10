@@ -11,8 +11,10 @@ import orderRouter from "./routes/orderRoute.js";
 // app config
 const app = express();
 const port = process.env.PORT || 4000;
+
 connectDB();
 connectCloudinary();
+
 // middleware
 app.use(cors());
 app.use(express.json());
@@ -20,11 +22,13 @@ app.use(express.json());
 // api endpoints
 app.use("/api/user", userRouter);
 app.use("/api/product", productRouter);
-app.get("/", (req, res) => {
-  res.send("api is working - view server.js for code");
-});
 app.use("/api/cart", cartRouter);
 app.use("/api/order", orderRouter);
 
-// listen);
-app.listen(port, () => console.log(`running on localhost:${port}`));
+// health check
+app.get("/", (req, res) => {
+  res.send("Victony Wears API is running");
+});
+
+// listen
+app.listen(port, () => console.log(`Server running on port ${port}`));
