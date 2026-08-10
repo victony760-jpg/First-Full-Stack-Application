@@ -10,7 +10,13 @@ import adminAuth from "../middleware/adminAuth.js";
 
 const productRouter = express.Router();
 
-// Handled up to 4 images to match your controller setup
+// GET all products - now works at /api/product
+productRouter.get("/", listProduct);
+
+// GET single product
+productRouter.post("/single", singleProduct);
+
+// ADMIN routes
 productRouter.post(
   "/add",
   adminAuth,
@@ -18,13 +24,11 @@ productRouter.post(
     { name: "image1", maxCount: 1 },
     { name: "image2", maxCount: 1 },
     { name: "image3", maxCount: 1 },
-    { name: "image4", maxCount: 1 }, // Added this line
+    { name: "image4", maxCount: 1 },
   ]),
   addProduct,
 );
 
-productRouter.get("/list", listProduct);
 productRouter.post("/remove", adminAuth, removeProduct);
-productRouter.post("/single", singleProduct);
 
 export default productRouter;
