@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { ToastContainer } from 'react-toastify'
+import 'react-toastify/dist/ReactToastify.css'
 import Navbar from './components/Navbar'
 import Sidebar from './components/Sidebar'
 import Login from './components/Login'
 import Add from './pages/Add'
 import List from './pages/List'
-import Orders from './pages/orders'
+import Orders from './pages/Orders' // FIXED: Capital O
 import { Navigate, Route, Routes } from 'react-router-dom'
 
 const App = () => {
@@ -18,7 +19,6 @@ const App = () => {
 
   const updateToken = (newToken) => {
     setToken(newToken)
-
     if (typeof window !== 'undefined') {
       if (newToken) {
         localStorage.setItem('adminToken', newToken)
