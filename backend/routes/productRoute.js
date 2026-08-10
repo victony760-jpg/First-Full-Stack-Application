@@ -10,10 +10,9 @@ import adminAuth from "../middleware/adminAuth.js";
 
 const productRouter = express.Router();
 
-// GET all products - now works at /api/product
-productRouter.get("/", listProduct);
-
-// GET single product
+// PUBLIC routes - added /list for frontend
+productRouter.get("/list", listProduct); // <-- NEW: for frontend
+productRouter.get("/", listProduct); // <-- KEEP: backup
 productRouter.post("/single", singleProduct);
 
 // ADMIN routes
